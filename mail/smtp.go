@@ -125,7 +125,7 @@ func (s *SMTP) submit(msg *Message) error {
 
 	// Write HTML (if any)
 	if len(msg.HTMLBody) > 0 {
-		s.writeTextEmailPart(buffer, "text/html; charset=UTF-8", msg.HTMLBody)
+		s.writeTextEmailPart(&buffer, "text/html; charset=UTF-8", msg.HTMLBody)
 	}
 	// Write Plaintext (if any)
 	if len(msg.PlaintextBody) > 0 {
@@ -133,10 +133,10 @@ func (s *SMTP) submit(msg *Message) error {
 			// boundary / marker / separator
 			buffer.WriteString(fmt.Sprintf("--%s\r\n", bmarker))
 		}
-		s.writeTextEmailPart(buffer, "text/plain; charset=UTF-8", msg.PlaintextBody)
+		s.writeTextEmailPart(&buffer, "text/plain; charset=UTF-8", msg.PlaintextBody)
 	}
 
-	tols := make([]string, lwn(msg.To))
+	tols := make([]string, len(msg.To))
 	for k, v := range msg.To {
 		tols[k] = v.Email
 	}
@@ -152,7 +152,7 @@ func (s *SMTP) submit(msg *Message) error {
 	}
 
 	var fbuff bytes.Buffer
-	for curItem := files.First(); curItem != nil; curItem = curItem.Next() {
+	for curItem := msg.Files.First(); curItem != nil; curItem = curItem.Next() {
 
 		fbuff.Truncate(0)
 		//read and encode attachment
