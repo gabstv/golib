@@ -48,6 +48,15 @@ func (l *AttachmentList) Count() int {
 	return l.count
 }
 
+func (l *AttachmentList) GetFilenames() []string {
+	//P141006 fixed memory leak
+	names := make([]string, 0)
+	for li := l.First(); li != nil; li = li.Next() {
+		names = append(names, li.Value.Name)
+	}
+	return names
+}
+
 type AttachmentListItem struct {
 	Value *AttachmentInfo
 	next  *AttachmentListItem
