@@ -2,12 +2,14 @@ package mail
 
 import (
 	"io"
+	"os"
 )
 
 type AttachmentInfo struct {
 	File     io.ReadCloser
 	Name     string
 	MimeType string
+	Path     string // optional path in disk
 }
 
 func NewAttachmentList() *AttachmentList {
@@ -55,6 +57,19 @@ func (l *AttachmentList) GetFilenames() []string {
 		names = append(names, li.Value.Name)
 	}
 	return names
+}
+
+func (l *AttachmentList) PurgeFiles() {
+	for li := l.First(); li != nil; li = li.Next() {
+		if len(li.Value.Path) > 0 {
+			os.Remove(li.Value.Path)
+			li.Value.Path = ""
+		}
+		if li.Value.File != nil {
+			li.Value.File.Close()
+			li.Value.File = nil
+		}
+	}
 }
 
 type AttachmentListItem struct {

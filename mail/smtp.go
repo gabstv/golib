@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/smtp"
+	"os"
 )
 
 type Address struct {
@@ -156,6 +157,10 @@ func (s *SMTP) submit(msg *Message) error {
 
 		fbuff.Truncate(0)
 		//read and encode attachment
+		if len(curItem.Value.Path) > 0 && curItem.Value.File == nil {
+			curItem.Value.File, _ = os.Open(curItem.Value.Path)
+			//TODO: treat this error
+		}
 		content, _ := ioutil.ReadAll(curItem.Value.File)
 		encoded := base64.StdEncoding.EncodeToString(content)
 
