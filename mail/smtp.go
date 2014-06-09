@@ -46,7 +46,7 @@ func NewSMTP(auth smtp.Auth, address string) *SMTP {
 	return &SMTP{auth, address}
 }
 
-func (s *SMTP) SubmitHTML(fromEmail, fromName, toEmail, toName, subject, htmlBody string, files *AttachmentList) error {
+func (s *SMTP) SubmitHTML(fromEmail, fromName, toEmail, toName, subject, htmlBody string, files *AttachmentList) (int, error) {
 	m := NewMessage()
 	m.From.Name = fromName
 	m.From.Email = fromEmail
@@ -57,7 +57,7 @@ func (s *SMTP) SubmitHTML(fromEmail, fromName, toEmail, toName, subject, htmlBod
 	return s.submit(m)
 }
 
-func (s *SMTP) SubmitPlaintext(fromEmail, fromName, toEmail, toName, subject, plainBody string, files *AttachmentList) error {
+func (s *SMTP) SubmitPlaintext(fromEmail, fromName, toEmail, toName, subject, plainBody string, files *AttachmentList) (int, error) {
 	m := NewMessage()
 	m.From.Name = fromName
 	m.From.Email = fromEmail
@@ -68,7 +68,7 @@ func (s *SMTP) SubmitPlaintext(fromEmail, fromName, toEmail, toName, subject, pl
 	return s.submit(m)
 }
 
-func (s *SMTP) SubmitMixed(fromEmail, fromName, toEmail, toName, subject, plainBody string, htmlBody string, files *AttachmentList) error {
+func (s *SMTP) SubmitMixed(fromEmail, fromName, toEmail, toName, subject, plainBody string, htmlBody string, files *AttachmentList) (int, error) {
 	m := NewMessage()
 	m.From.Name = fromName
 	m.From.Email = fromEmail
@@ -100,13 +100,18 @@ func (s *SMTP) writeTextEmailPart(w io.Writer, contentType, body string) (n int,
 	return
 }
 
-func (s *SMTP) submit(msg *Message) error {
+func (s *SMTP) submit(msg *Message) (int, error) {
 	var buffer bytes.Buffer
 	bmarker := newBoundary()
 
+	var written int
+	adb := func(i int, er error) {
+		written += i
+	}
+
 	//// [START] [HEADERS] write the email headers
 	// FROM
-	buffer.WriteString(fmt.Sprintf("From: %s <%s>\r\n", msg.From.Name, msg.From.Email))
+	adb(buffer.WriteString(fmt.Sprintf("From: %s <%s>\r\n", msg.From.Name, msg.From.Email)))
 	// TO
 	var tol bytes.Buffer
 	for i := 0; i < len(msg.To); i++ {
@@ -118,26 +123,27 @@ func (s *SMTP) submit(msg *Message) error {
 		tol.WriteString(msg.To[i].Email)
 		tol.WriteString(">")
 	}
-	buffer.WriteString(fmt.Sprintf("To: %s\r\n", tol.String()))
+	adb(buffer.WriteString(fmt.Sprintf("To: %s\r\n", tol.String())))
 	// SUBJECT
-	buffer.WriteString(fmt.Sprintf("Subject: %s\r\n", msg.Subject))
+	adb(buffer.WriteString(fmt.Sprintf("Subject: %s\r\n", msg.Subject)))
 	// MIME-Version
-	buffer.WriteString("MIME-Version: 1.0\r\n")
+	adb(buffer.WriteString("MIME-Version: 1.0\r\n"))
 	// Content-Type
-	buffer.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n--%s\r\n", bmarker, bmarker))
+	adb(buffer.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n--%s\r\n", bmarker, bmarker)))
 	// [END] [HEADERS]
 
 	// Write HTML (if any)
 	if len(msg.HTMLBody) > 0 {
-		s.writeTextEmailPart(&buffer, "text/html; charset=UTF-8", msg.HTMLBody)
+		adb(s.writeTextEmailPart(&buffer, "text/html; charset=UTF-8", msg.HTMLBody))
+
 	}
 	// Write Plaintext (if any)
 	if len(msg.PlaintextBody) > 0 {
 		if len(msg.HTMLBody) > 0 {
 			// boundary / marker / separator
-			buffer.WriteString(fmt.Sprintf("--%s\r\n", bmarker))
+			adb(buffer.WriteString(fmt.Sprintf("--%s\r\n", bmarker)))
 		}
-		s.writeTextEmailPart(&buffer, "text/plain; charset=UTF-8", msg.PlaintextBody)
+		adb(s.writeTextEmailPart(&buffer, "text/plain; charset=UTF-8", msg.PlaintextBody))
 	}
 
 	tols := make([]string, len(msg.To))
@@ -146,13 +152,13 @@ func (s *SMTP) submit(msg *Message) error {
 	}
 
 	if msg.Files == nil {
-		buffer.WriteString(fmt.Sprintf("--%s--", bmarker))
-		return smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+		adb(buffer.WriteString(fmt.Sprintf("--%s--", bmarker)))
+		return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
 	}
 
 	if msg.Files.Count() < 1 {
-		buffer.WriteString(fmt.Sprintf("--%s--", bmarker))
-		return smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+		adb(buffer.WriteString(fmt.Sprintf("--%s--", bmarker)))
+		return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
 	}
 
 	var fbuff bytes.Buffer
@@ -177,10 +183,10 @@ func (s *SMTP) submit(msg *Message) error {
 		}
 
 		//part 3 will be the attachment
-		buffer.WriteString(fmt.Sprintf("\r\nContent-Type: %s; name=\"%s\"\r\nContent-Transfer-Encoding:base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s", curItem.Value.MimeType, curItem.Value.Name, curItem.Value.Name, fbuff.String(), bmarker))
+		adb(buffer.WriteString(fmt.Sprintf("\r\nContent-Type: %s; name=\"%s\"\r\nContent-Transfer-Encoding:base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s", curItem.Value.MimeType, curItem.Value.Name, curItem.Value.Name, fbuff.String(), bmarker)))
 		curItem.Value.File.Close()
 	}
 	fbuff.Truncate(0)
-	buffer.WriteString("--")
-	return smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+	adb(buffer.WriteString("--"))
+	return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
 }
