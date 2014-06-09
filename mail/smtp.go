@@ -52,6 +52,7 @@ func (s *SMTP) SubmitHTML(fromEmail, fromName, toEmail, toName, subject, htmlBod
 	m.AddRecipient(Address{toEmail, toName})
 	m.HTMLBody = htmlBody
 	m.Files = files
+	m.Subject = subject
 	return s.submit(m)
 }
 
@@ -62,6 +63,7 @@ func (s *SMTP) SubmitPlaintext(fromEmail, fromName, toEmail, toName, subject, pl
 	m.AddRecipient(Address{toEmail, toName})
 	m.PlaintextBody = plainBody
 	m.Files = files
+	m.Subject = subject
 	return s.submit(m)
 }
 
@@ -73,6 +75,7 @@ func (s *SMTP) SubmitMixed(fromEmail, fromName, toEmail, toName, subject, plainB
 	m.HTMLBody = htmlBody
 	m.PlaintextBody = plainBody
 	m.Files = files
+	m.Subject = subject
 	return s.submit(m)
 }
 
