@@ -107,25 +107,17 @@ func (s *SMTP) submit(msg *Message) (int, error) {
 
 	if len(msg.HTMLBody) > 0 && len(msg.PlaintextBody) > 0 {
 		alternatives := message.NewMultipartMessage("alternative", newBoundary())
-		hbits := new(bytes.Buffer)
-		tbits := new(bytes.Buffer)
-		hbits.WriteString(msg.HTMLBody)
-		tbits.WriteString(msg.PlaintextBody)
-		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, hbits)
+		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.HTMLBody))
 		hmsg.SetHeader("Content-Type", "text/html; charset=UTF-8")
-		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, tbits)
+		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.PlaintextBody))
 		tmsg.SetHeader("Content-Type", "text/plain; charset=UTF-8")
 		multipartmessage.AddPart(&alternatives.Message)
 	} else if len(msg.HTMLBody) > 0 {
-		hbits := new(bytes.Buffer)
-		hbits.WriteString(msg.HTMLBody)
-		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, hbits)
+		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.HTMLBody))
 		hmsg.SetHeader("Content-Type", "text/html; charset=UTF-8")
 		multipartmessage.AddPart(hmsg)
 	} else if len(msg.PlaintextBody) > 0 {
-		tbits := new(bytes.Buffer)
-		tbits.WriteString(msg.PlaintextBody)
-		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, tbits)
+		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.PlaintextBody))
 		tmsg.SetHeader("Content-Type", "text/plain; charset=UTF-8")
 		multipartmessage.AddPart(tmsg)
 	}
