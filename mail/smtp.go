@@ -3,9 +3,9 @@ package mail
 import (
 	"bytes"
 	"fmt"
+	"github.com/gabstv/golib/smtp2"
 	"github.com/sloonz/go-mime-message"
 	"github.com/sloonz/go-qprintable"
-	"io"
 	"net/smtp"
 	"os"
 )
@@ -154,8 +154,5 @@ func (s *SMTP) submit(msg *Message) (int, error) {
 	}
 
 Submit:
-	buffer := new(bytes.Buffer)
-	written, _ := io.Copy(buffer, multipartmessage)
-	//TODO: replace smtp.Send with a buffer receiver sender for SMTP
-	return int(written), smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, msg.From.Email, tols, multipartmessage)
 }
