@@ -2,10 +2,10 @@ package mail
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
+	"github.com/sloonz/go-mime-message"
+	"github.com/sloonz/go-qprintable"
 	"io"
-	"io/ioutil"
 	"net/smtp"
 	"os"
 )
@@ -80,113 +80,82 @@ func (s *SMTP) SubmitMixed(fromEmail, fromName, toEmail, toName, subject, plainB
 	return s.submit(m)
 }
 
-func (s *SMTP) writeTextEmailPart(w io.Writer, contentType, body string) (n int, err error) {
-	var n2 int
-	// write content-type
-	n2, err = w.Write([]byte("Content-Type: " + contentType + "\r\n"))
-	n += n2
-	if err != nil {
-		return
-	}
-	// write content transfer encoding
-	n2, err = w.Write([]byte("Content-Transfer-Encoding: 8bit\r\n"))
-	n += n2
-	if err != nil {
-		return
-	}
-	// write body
-	n2, err = w.Write([]byte(fmt.Sprintf("\r\n%s\r\n", body)))
-	n += n2
-	return
-}
-
 func (s *SMTP) submit(msg *Message) (int, error) {
-	var buffer bytes.Buffer
+	//var buffer bytes.Buffer
 	bmarker := newBoundary()
+	multipartmessage := message.NewMultipartMessage("mixed", bmarker)
 
-	var written int
-	adb := func(i int, er error) {
-		written += i
-	}
-
-	//// [START] [HEADERS] write the email headers
-	// FROM
-	adb(buffer.WriteString(fmt.Sprintf("From: %s <%s>\r\n", msg.From.Name, msg.From.Email)))
+	multipartmessage.SetHeader("From", fmt.Sprintf("%s <%s>", message.EncodeWord(msg.From.Name), msg.From.Email))
+	multipartmessage.SetHeader("Return-Path", fmt.Sprintf("<%s>", msg.From.Email))
 	// TO
 	var tol bytes.Buffer
 	for i := 0; i < len(msg.To); i++ {
 		if i > 0 {
 			tol.WriteString(", ")
 		}
-		tol.WriteString(msg.To[i].Name)
+		tol.WriteString(message.EncodeWord(msg.To[i].Name))
 		tol.WriteString(" <")
 		tol.WriteString(msg.To[i].Email)
 		tol.WriteString(">")
 	}
-	adb(buffer.WriteString(fmt.Sprintf("To: %s\r\n", tol.String())))
+	multipartmessage.SetHeader("To", tol.String())
 	// SUBJECT
-	adb(buffer.WriteString(fmt.Sprintf("Subject: %s\r\n", msg.Subject)))
-	// MIME-Version
-	adb(buffer.WriteString("MIME-Version: 1.0\r\n"))
-	// Content-Type
-	adb(buffer.WriteString(fmt.Sprintf("Content-Type: multipart/mixed; boundary=%s\r\n--%s\r\n", bmarker, bmarker)))
-	// [END] [HEADERS]
+	multipartmessage.SetHeader("Subject", message.EncodeWord(msg.Subject))
+	//// MIME-Version
+	multipartmessage.SetHeader("MIME-Version", "1.0")
+	//// [END] [HEADERS]
 
-	// Write HTML (if any)
-	if len(msg.HTMLBody) > 0 {
-		adb(s.writeTextEmailPart(&buffer, "text/html; charset=UTF-8", msg.HTMLBody))
-
-	}
-	// Write Plaintext (if any)
-	if len(msg.PlaintextBody) > 0 {
-		if len(msg.HTMLBody) > 0 {
-			// boundary / marker / separator
-			adb(buffer.WriteString(fmt.Sprintf("--%s\r\n", bmarker)))
-		}
-		adb(s.writeTextEmailPart(&buffer, "text/plain; charset=UTF-8", msg.PlaintextBody))
+	if len(msg.HTMLBody) > 0 && len(msg.PlaintextBody) > 0 {
+		alternatives := message.NewMultipartMessage("alternative", newBoundary())
+		hbits := new(bytes.Buffer)
+		tbits := new(bytes.Buffer)
+		hbits.WriteString(msg.HTMLBody)
+		tbits.WriteString(msg.PlaintextBody)
+		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, hbits)
+		hmsg.SetHeader("Content-Type", "text/html; charset=UTF-8")
+		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, tbits)
+		tmsg.SetHeader("Content-Type", "text/plain; charset=UTF-8")
+		multipartmessage.AddPart(&alternatives.Message)
+	} else if len(msg.HTMLBody) > 0 {
+		hbits := new(bytes.Buffer)
+		hbits.WriteString(msg.HTMLBody)
+		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, hbits)
+		hmsg.SetHeader("Content-Type", "text/html; charset=UTF-8")
+		multipartmessage.AddPart(hmsg)
+	} else if len(msg.PlaintextBody) > 0 {
+		tbits := new(bytes.Buffer)
+		tbits.WriteString(msg.PlaintextBody)
+		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, tbits)
+		tmsg.SetHeader("Content-Type", "text/plain; charset=UTF-8")
+		multipartmessage.AddPart(tmsg)
 	}
 
 	tols := make([]string, len(msg.To))
 	for k, v := range msg.To {
 		tols[k] = v.Email
 	}
-
+	//
 	if msg.Files == nil {
-		adb(buffer.WriteString(fmt.Sprintf("--%s--", bmarker)))
-		return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+		goto Submit
 	}
-
 	if msg.Files.Count() < 1 {
-		adb(buffer.WriteString(fmt.Sprintf("--%s--", bmarker)))
-		return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+		goto Submit
 	}
 
-	var fbuff bytes.Buffer
 	for curItem := msg.Files.First(); curItem != nil; curItem = curItem.Next() {
-
-		fbuff.Truncate(0)
-		//read and encode attachment
 		if len(curItem.Value.Path) > 0 && curItem.Value.File == nil {
 			curItem.Value.File, _ = os.Open(curItem.Value.Path)
 			//TODO: treat this error
 		}
-		content, _ := ioutil.ReadAll(curItem.Value.File)
-		encoded := base64.StdEncoding.EncodeToString(content)
-
-		//split the encoded file in lines (doesn't matter, but low enough not to hit a max limit)
-		lineMaxLength := 500
-		nbrLines := len(encoded) / lineMaxLength
-
-		//append lines to buffer
-		for i := 0; i < nbrLines; i++ {
-			fbuff.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
-		}
-
-		//part 3 will be the attachment
-		adb(buffer.WriteString(fmt.Sprintf("\r\nContent-Type: %s; name=\"%s\"\r\nContent-Transfer-Encoding:base64\r\nContent-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s", curItem.Value.MimeType, curItem.Value.Name, curItem.Value.Name, fbuff.String(), bmarker)))
-		curItem.Value.File.Close()
+		msg00 := message.NewBinaryMessage(curItem.Value.File)
+		msg00.SetHeader("Content-Type", fmt.Sprintf("%v; name=\"%v\"", curItem.Value.MimeType, message.EncodeWord(curItem.Value.Name)))
+		msg00.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%v\"", message.EncodeWord(curItem.Value.Name)))
+		multipartmessage.AddPart(msg00)
 	}
-	fbuff.Truncate(0)
-	adb(buffer.WriteString("--"))
-	return written, smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
+
+Submit:
+	buffer := new(bytes.Buffer)
+	written, _ := io.Copy(buffer, multipartmessage)
+	//TODO: replace smtp.Send with a buffer receiver sender for SMTP
+	return int(written), smtp.SendMail(s.Address, s.Auth, msg.From.Email, tols, buffer.Bytes())
 }
