@@ -80,6 +80,11 @@ func (s *SMTP) SubmitMixed(fromEmail, fromName, toEmail, toName, subject, plainB
 	return s.submit(m)
 }
 
+func (s *SMTP) SubmitMessage(msg *Message) error {
+	_, err := s.submit(msg)
+	return err
+}
+
 func (s *SMTP) submit(msg *Message) (int, error) {
 	//var buffer bytes.Buffer
 	bmarker := newBoundary()
