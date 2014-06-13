@@ -28,6 +28,7 @@ func ReadMessage(r io.Reader) (msg *Message, err error) {
 	msg.Header = msg2.Header
 	reader := bufio.NewReader(msg2.Body)
 	theBoundary, _, err := reader.ReadLine()
+	fmt.Println("theBoundary", theBoundary)
 	boundary2 = make([]byte, len(theBoundary))
 	if err != nil {
 		fmt.Println("LOCAO reader.ReadLine()")
