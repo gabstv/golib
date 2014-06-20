@@ -28,11 +28,13 @@ type Message struct {
 	HTMLBody      string
 	PlaintextBody string
 	Files         *AttachmentList
+	RawHeaders    map[string]string
 }
 
 func NewMessage() *Message {
 	m := &Message{}
 	m.Files = NewAttachmentList()
+	m.RawHeaders = make(map[string]string)
 	return m
 }
 
@@ -143,6 +145,12 @@ func (s *SMTP) submit(msg *Message) (int, error) {
 	tols := make([]string, len(msg.To))
 	for k, v := range msg.To {
 		tols[k] = v.Email
+	}
+	// CUSTOM HEADERS
+	if msg.RawHeaders != nil {
+		for k, v := range msg.RawHeaders {
+			multipartmessage.SetHeader(k, v)
+		}
 	}
 	//
 	if msg.Files == nil {
