@@ -2,10 +2,18 @@ package header
 
 import (
 	"bytes"
+	"log"
 	"strings"
 )
 
+var (
+	Verbose = false
+)
+
 func MapParams(val string) map[string]string {
+	if Verbose {
+		log.Println("MapParams", val)
+	}
 	vs := strings.SplitN(val, ";", 2)
 	outp := make(map[string]string)
 	outp["value"] = strings.TrimSpace(vs[0])
@@ -42,6 +50,9 @@ func MapParams(val string) map[string]string {
 				if insidequot {
 					lastv.WriteRune(';')
 				} else {
+					if Verbose {
+						log.Println(lastk.String(), "=", lastv.String())
+					}
 					outp[strings.TrimSpace(lastk.String())] = strings.TrimSpace(lastv.String())
 					lastk.Truncate(0)
 					lastv.Truncate(0)
@@ -49,6 +60,8 @@ func MapParams(val string) map[string]string {
 					insidekey = true
 					insidequot = false
 				}
+			} else {
+				lastv.WriteRune(v)
 			}
 		}
 	}
