@@ -15,3 +15,16 @@ func TestMap(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractMil(t *testing.T) {
+	en := "Gabriel Ochsenhofer"
+	ev := "gabriel@nutripele.com"
+	raw := "Gabriel Ochsenhofer <gabriel@nutripele.com>"
+	r0, r1 := ExtractNameEmail(raw)
+	if r0 != en {
+		t.Errorf("expected `%v` got `%v`\n", en, r0)
+	}
+	if r1 != ev {
+		t.Errorf("expected `%v` got `%v`\n", ev, r1)
+	}
+}
