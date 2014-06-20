@@ -6,8 +6,14 @@ import (
 	"github.com/gabstv/golib/smtp2"
 	"github.com/sloonz/go-mime-message"
 	"github.com/sloonz/go-qprintable"
+	"io"
+	"log"
 	"net/smtp"
 	"os"
+)
+
+var (
+	Verbose = false
 )
 
 type Address struct {
@@ -109,13 +115,20 @@ func (s *SMTP) submit(msg *Message) (int, error) {
 	//// MIME-Version
 	multipartmessage.SetHeader("MIME-Version", "1.0")
 	//// [END] [HEADERS]
+	//
+	if Verbose {
+		log.Println("msg.HTMLBody", msg.HTMLBody)
+		log.Println("msg.PlaintextBody", msg.PlaintextBody)
+	}
 
 	if len(msg.HTMLBody) > 0 && len(msg.PlaintextBody) > 0 {
 		alternatives := message.NewMultipartMessage("alternative", newBoundary())
 		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.HTMLBody))
 		hmsg.SetHeader("Content-Type", "text/html; charset=UTF-8")
+		alternatives.AddPart(hmsg)
 		tmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.PlaintextBody))
 		tmsg.SetHeader("Content-Type", "text/plain; charset=UTF-8")
+		alternatives.AddPart(tmsg)
 		multipartmessage.AddPart(&alternatives.Message)
 	} else if len(msg.HTMLBody) > 0 {
 		hmsg := message.NewTextMessage(qprintable.UnixTextEncoding, bytes.NewBufferString(msg.HTMLBody))
@@ -151,5 +164,14 @@ func (s *SMTP) submit(msg *Message) (int, error) {
 	}
 
 Submit:
-	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, msg.From.Email, tols, multipartmessage)
+	var rrdr io.Reader
+	if Verbose {
+		bf := new(bytes.Buffer)
+		io.Copy(bf, multipartmessage)
+		log.Println(bf.String())
+		rrdr = bf
+	} else {
+		rrdr = multipartmessage
+	}
+	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, msg.From.Email, tols, rrdr)
 }
