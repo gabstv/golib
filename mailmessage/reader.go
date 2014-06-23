@@ -10,7 +10,7 @@ import (
 	"io"
 	"log"
 	"net/mail"
-	"net/textproto"
+	//"net/textproto"
 	"os"
 	"path"
 	"strconv"
@@ -32,6 +32,7 @@ type Message struct {
 	Path     string
 	File     *os.File
 	Children []*Message
+	decoded  bool
 }
 
 func (m *Message) Purge() {
@@ -50,13 +51,14 @@ func (m *Message) Purge() {
 }
 
 func (m *Message) HTML() string {
-	var rdr io.Reader
+	var rdr *os.File
 	if m.Kind == MSG_MULTIPARTALTERNATIVE {
 		// find html
 		for k := range m.Children {
 			ct := m.Children[k].Header.Get("Content-Type")
 			if strings.HasPrefix(ct, "text/html") {
 				rdr = m.Children[k].File
+				log.Println("^^^ HTML HEADER:::", m.Children[k].Header)
 				break
 			}
 		}
@@ -71,6 +73,7 @@ func (m *Message) HTML() string {
 	}
 	var buffer bytes.Buffer
 	io.Copy(&buffer, rdr)
+	rdr.Seek(0, 0)
 	return buffer.String()
 }
 
@@ -174,7 +177,7 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	cte = strings.TrimSpace(cte)
 	cte = strings.ToLower(cte)
 
-	if cte == "base64" {
+	if cte == "base64" && !msg0.decoded {
 		bio := bufio.NewReader(msg0.File)
 		tf3n, tf3, _ := tempFile()
 		for {
@@ -199,24 +202,21 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		tf2.Seek(0, 0)
 		tf3.Close()
 		os.Remove(tf3n)
-	} else if cte == "quoted-printable" {
-		tpio := bufio.NewReader(msg0.File)
-		bio := textproto.NewReader(tpio)
+		msg0.decoded = true
+	} else if cte == "quoted-printable" && !msg0.decoded {
+		bio := newQuotedPrintableReader(msg0.File)
 		tf3n, tf3, _ := tempFile()
-		for {
-			line, err := bio.ReadLine()
-			if err != nil {
-				break
-			}
-			tf3.WriteString(line)
-		}
+		io.Copy(tf3, bio)
 		tf3.Sync()
 		tf3.Seek(0, 0)
+		tf2.Seek(0, 0)
+		tf2.Truncate(0)
 		io.Copy(tf2, tf3)
 		tf2.Sync()
 		tf2.Seek(0, 0)
 		tf3.Close()
 		os.Remove(tf3n)
+		msg0.decoded = true
 	}
 
 	return msg0, nil
