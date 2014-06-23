@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/mail"
+	"net/textproto"
 	"os"
 	"path"
 	"strconv"
@@ -194,6 +195,24 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		tf2.Seek(0, 0)
 		tf2.Truncate(0)
 		log.Println(io.Copy(tf2, trdr))
+		tf2.Sync()
+		tf2.Seek(0, 0)
+		tf3.Close()
+		os.Remove(tf3n)
+	} else if cte == "quoted-printable" {
+		tpio := bufio.NewReader(msg0.File)
+		bio := textproto.NewReader(tpio)
+		tf3n, tf3, _ := tempFile()
+		for {
+			line, err := bio.ReadLine()
+			if err != nil {
+				break
+			}
+			tf3.WriteString(line)
+		}
+		tf3.Sync()
+		tf3.Seek(0, 0)
+		io.Copy(tf2, tf3)
 		tf2.Sync()
 		tf2.Seek(0, 0)
 		tf3.Close()
