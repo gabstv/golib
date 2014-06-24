@@ -21,6 +21,13 @@ type Address struct {
 	Name  string
 }
 
+func NewAddress(name, email string) Address {
+	return Address{
+		Name:  name,
+		Email: email,
+	}
+}
+
 type Message struct {
 	From          Address
 	To            []Address
