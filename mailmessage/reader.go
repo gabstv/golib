@@ -147,7 +147,7 @@ func New(rdr *bufio.Reader) (*Message, error) {
 		return nil, err
 	}
 	contentType := mainm.Header.Get("Content-Type")
-	if strings.HasPrefix(contentType, "multipart/mixed") {
+	if strings.HasPrefix(contentType, "multipart/mixed") || strings.HasPrefix(contentType, "multipart/related") {
 		return multipartMessage(mainm, fil0)
 	} else if strings.HasPrefix(contentType, "multipart/alternative") {
 		return alternativeMessage(mainm, fil0)
@@ -303,7 +303,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		}
 		var mmmsg *Message
 		contentType := nmsg.Header.Get("Content-Type")
-		if strings.HasPrefix(contentType, "multipart/mixed") {
+		if strings.HasPrefix(contentType, "multipart/mixed") || strings.HasPrefix(contentType, "multipart/related") {
 			mmmsg, err = multipartMessage(nmsg, tf)
 		} else if strings.HasPrefix(contentType, "multipart/alternative") {
 			mmmsg, err = alternativeMessage(nmsg, tf)
