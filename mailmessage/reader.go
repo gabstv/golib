@@ -134,6 +134,10 @@ func New(rdr *bufio.Reader) (*Message, error) {
 		}
 		_, err = fil0.WriteString(line)
 		if err != nil {
+			log.Println("ERROROROR", err)
+			if err.Error() == "EOF" {
+				break
+			}
 			return nil, err
 		}
 	}
@@ -235,15 +239,24 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	ct := mainm.Header.Get("Content-Type")
 	log.Println("it's multipart mixed", ct)
 	boundary, err := getBoundary(ct)
+	log.Println("`" + boundary + "`")
 	if err != nil {
+		log.Println("BOUNDARY ERROR", err)
 		return nil, err
 	}
+	boundary = strings.Trim(boundary, "\"")
 	rdr := bufio.NewReader(mainm.Body)
 	for {
 		// read first boundary
 		line, lerr := rdr.ReadString('\n')
+		//log.Println(line)
 		if lerr != nil {
-			return nil, lerr
+			//log.Println("FGHG ERROR", lerr)
+			if lerr.Error() == "EOF" {
+				break
+			} else {
+				return nil, lerr
+			}
 		}
 		if strings.HasPrefix(line, "--"+boundary) {
 			break
