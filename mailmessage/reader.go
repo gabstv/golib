@@ -369,7 +369,9 @@ func normalizeHeaders(h mail.Header) {
 				io.Copy(buff2, ior)
 				return buff2.String()
 			})
-			v[k2] = strings.Trim(v[k2], "\"")
+			if strings.HasPrefix(v[k2], "\"") && strings.HasSuffix(v[k2], "\"") {
+				v[k2] = strings.Trim(v[k2], "\"")
+			}
 			/*if strings.HasPrefix(v[k2], "=?UTF-8?B?") {
 				// UTF-8 BASE64
 				vv := v[k2][10 : len(v[k2])-2]
