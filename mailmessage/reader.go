@@ -149,9 +149,39 @@ func New(rdr *bufio.Reader) (*Message, error) {
 			return nil, err
 		}
 	}
+Rummage:
 	fil0.Seek(0, 0)
 	mainm, err := mail.ReadMessage(fil0)
 	if err != nil {
+		erstr := err.Error()
+		if strings.HasPrefix(erstr, "malformed MIME header line: ") {
+			// remove the line
+			//TODO: see if this is the right way to treat it
+			fil1p, fil1f, _ := tempFile()
+			fil0.Seek(0, 0)
+			io.Copy(fil1f, fil0)
+			fil1f.Seek(0, 0)
+			bio1 := bufio.NewReader(fil1f)
+			fil0.Seek(0, 0)
+			fil0.Truncate(0)
+			fil0.Seek(0, 0)
+			for {
+				line, lerr := bio1.ReadString('\n')
+				if lerr != nil {
+					break
+				}
+				if strings.HasPrefix(line, erstr[28:]) {
+					log.Println("FOUND THE CULPRIT HEADER LINE!", line)
+				} else {
+					fil0.WriteString(line)
+				}
+			}
+			fil0.Seek(0, 0)
+			fil1f.Close()
+			os.Remove(fil1p)
+			goto Rummage
+		}
+		log.Println("ERROR ON READMESSAGE")
 		return nil, err
 	}
 	mainm.Header = normalizeHeaders(mainm.Header)
