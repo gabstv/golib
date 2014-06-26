@@ -26,6 +26,13 @@ const (
 	MSG_MESSAGE
 )
 
+var (
+	utf8b      = regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
+	utf8q      = regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
+	iso88591q  = regexp.MustCompile(`\?iso-8859-1\?Q\?(.*?)\?`)
+	iso88591q2 = regexp.MustCompile(`=\?iso-8859-1\?Q\?(.*?)\?=`)
+)
+
 type Message struct {
 	Kind     int
 	Header   mail.Header
@@ -147,7 +154,7 @@ func New(rdr *bufio.Reader) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	normalizeHeaders(mainm.Header)
+	mainm.Header = normalizeHeaders(mainm.Header)
 	contentType := mainm.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "multipart/mixed") || strings.HasPrefix(contentType, "multipart/related") {
 		return multipartMessage(mainm, fil0)
@@ -160,7 +167,7 @@ func New(rdr *bufio.Reader) (*Message, error) {
 func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	msg0 := &Message{}
 	msg0.Header = mainm.Header
-	normalizeHeaders(msg0.Header)
+	msg0.Header = normalizeHeaders(msg0.Header)
 	msg0.File = f
 	if f != nil {
 		msg0.Path = f.Name()
@@ -326,12 +333,8 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	return msg0, nil
 }
 
-func normalizeHeaders(h mail.Header) {
-	utf8b := regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
-	utf8q := regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
-	iso88591q := regexp.MustCompile(`\?iso-8859-1\?Q\?(.*?)\?`)
-	iso88591q2 := regexp.MustCompile(`=\?iso-8859-1\?Q\?(.*?)=\?`)
-	for _, v := range h {
+func normalizeHeaders(h mail.Header) mail.Header {
+	for k, v := range h {
 		for k2 := range v {
 			v[k2] = utf8b.ReplaceAllStringFunc(v[k2], func(str0 string) string {
 				vv := str0[10 : len(str0)-2]
@@ -372,43 +375,10 @@ func normalizeHeaders(h mail.Header) {
 			if strings.HasPrefix(v[k2], "\"") && strings.HasSuffix(v[k2], "\"") {
 				v[k2] = strings.Trim(v[k2], "\"")
 			}
-			/*if strings.HasPrefix(v[k2], "=?UTF-8?B?") {
-				// UTF-8 BASE64
-				vv := v[k2][10 : len(v[k2])-2]
-				vv := v[k2][10 : len(v[k2])-2]
-				v8, err := base64.StdEncoding.DecodeString(vv)
-				if err != nil {
-					log.Println("FATAL B64 DECODE", err)
-				} else {
-					v[k2] = string(v8)
-				}
-			} else if strings.HasPrefix(v[k2], "=?UTF-8?Q?") {
-				buff := new(bytes.Buffer)
-				vv := v[k2][10 : len(v[k2])-2]
-				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff)
-				buff2 := new(bytes.Buffer)
-				io.Copy(buff2, ior)
-				v[k2] = buff2.String()
-			} else if strings.HasPrefix(v[k2], "?iso-8859-1?Q?") {
-				buff := new(bytes.Buffer)
-				vv := v[k2][14 : len(v[k2])-1]
-				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff)
-				buff2 := new(bytes.Buffer)
-				io.Copy(buff2, ior)
-				v[k2] = buff2.String()
-			} else if strings.HasPrefix(v[k2], "?iso-8859-1?B?") {
-				vv := v[k2][14 : len(v[k2])-1]
-				v8, err := base64.StdEncoding.DecodeString(vv)
-				if err != nil {
-					log.Println("FATAL B64 DECODE", err)
-				} else {
-					v[k2] = string(v8)
-				}
-			}*/
 		}
+		h[k] = v
 	}
+	return h
 }
 
 func getBoundary(contentType string) (string, error) {
