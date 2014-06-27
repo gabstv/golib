@@ -14,19 +14,34 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/bjarneh/latinx"
 	"io"
+	"strings"
 )
 
 type qpReader struct {
-	br   *bufio.Reader
-	rerr error  // last read error
-	line []byte // to be consumed before more of br
+	br         *bufio.Reader
+	rerr       error  // last read error
+	line       []byte // to be consumed before more of br
+	isocharset int
 }
 
-func newQuotedPrintableReader(r io.Reader) io.Reader {
-	return &qpReader{
-		br: bufio.NewReader(r),
+func (q *qpReader) setcharset(cset string) {
+	switch strings.ToLower(cset) {
+	case "iso-8859-1":
+		q.isocharset = latinx.ISO_8859_1
 	}
+}
+
+func newQuotedPrintableReader(r io.Reader, charset ...string) io.Reader {
+	v := &qpReader{
+		br:         bufio.NewReader(r),
+		isocharset: -1,
+	}
+	if len(charset) > 0 {
+		v.setcharset(charset[0])
+	}
+	return v
 }
 
 func fromHex(b byte) (byte, error) {
@@ -102,6 +117,12 @@ func (q *qpReader) Read(p []byte) (n int, err error) {
 			b, err = q.readHexByte(q.line[1:])
 			if err != nil {
 				return n, err
+			}
+			if q.isocharset > -1 {
+				fmt.Println("b0:", b)
+				bb, _ := latinx.Decode(q.isocharset, []byte{b})
+				b = bb[0]
+				fmt.Println("b1:", b)
 			}
 			q.line = q.line[2:] // 2 of the 3; other 1 is done below
 		case b == '\t' || b == '\r' || b == '\n':

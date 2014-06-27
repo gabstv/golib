@@ -11,6 +11,8 @@ import (
 	"log"
 	"net/mail"
 	//"net/textproto"
+	"github.com/gabstv/golib/mail-header"
+	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
@@ -56,6 +58,34 @@ func (m *Message) Purge() {
 			m.Children[k].Purge()
 		}
 	}
+}
+
+func (m *Message) DebugPrint() {
+	log.Println("m *Message DebugPrint [HEADER]", m.Header.Get("Content-Type"))
+	log.Println("m *Message DebugPrint [HEADER]", m.Header)
+	if m.File != nil {
+		len0, _ := io.Copy(ioutil.Discard, m.File)
+		m.File.Seek(0, 0)
+		log.Println("m *Message DebugPrint [BODY]", len0, "bytes")
+	}
+	log.Println("m *Message DebugPrint [CHILDREN]")
+	if m.Children != nil {
+		for _, v := range m.Children {
+			v.DebugPrint()
+		}
+	}
+}
+
+func (m *Message) AllMessages() []*Message {
+	mmsg := make([]*Message, 0)
+	mmsg = append(mmsg, m)
+	if m.Children != nil {
+		for _, v := range m.Children {
+			list0 := v.AllMessages()
+			mmsg = append(mmsg, list0...)
+		}
+	}
+	return mmsg
 }
 
 func (m *Message) HTML() string {
@@ -249,6 +279,10 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		msg0.decoded = true
 	} else if cte == "quoted-printable" && !msg0.decoded {
 		bio := newQuotedPrintableReader(msg0.File)
+		pn0 := header.MapParams(msg0.Header.Get("Content-Type"))
+		if len(pn0["charset"]) > 0 {
+			bio = newQuotedPrintableReader(msg0.File, pn0["charset"])
+		}
 		tf3n, tf3, _ := tempFile()
 		io.Copy(tf3, bio)
 		tf3.Sync()
@@ -388,7 +422,7 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff := new(bytes.Buffer)
 				vv := str0[15 : len(str0)-2]
 				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff)
+				ior := newQuotedPrintableReader(buff, "iso-8859-1")
 				buff2 := new(bytes.Buffer)
 				io.Copy(buff2, ior)
 				return buff2.String()
@@ -397,7 +431,7 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff := new(bytes.Buffer)
 				vv := str0[14 : len(str0)-1]
 				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff)
+				ior := newQuotedPrintableReader(buff, "iso-8859-1")
 				buff2 := new(bytes.Buffer)
 				io.Copy(buff2, ior)
 				return buff2.String()
