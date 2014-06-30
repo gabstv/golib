@@ -122,7 +122,7 @@ func (q *qpReader) Read(p []byte) (n int, err error) {
 				fmt.Println("b0:", b)
 				bb, _ := latinx.Decode(q.isocharset, []byte{b})
 				b = bb[0]
-				fmt.Println("b1:", b)
+				fmt.Println("b1 (array):", bb)
 			}
 			q.line = q.line[2:] // 2 of the 3; other 1 is done below
 		case b == '\t' || b == '\r' || b == '\n':
