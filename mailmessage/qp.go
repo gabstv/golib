@@ -14,7 +14,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/bjarneh/latinx"
+	"github.com/gabstv/latinx"
 	"io"
 	"strings"
 )
@@ -33,13 +33,17 @@ func (q *qpReader) setcharset(cset string) {
 	}
 }
 
-func newQuotedPrintableReader(r io.Reader, charset ...string) io.Reader {
+func newQuotedPrintableReaderByCharsetStr(charset string) *qpReader {
 	v := &qpReader{
-		br:         bufio.NewReader(r),
 		isocharset: -1,
 	}
-	if len(charset) > 0 {
-		v.setcharset(charset[0])
+	v.setcharset(charset)
+	return v
+}
+
+func newQuotedPrintableReaderByCharsetId(charset int) *qpReader {
+	v := &qpReader{
+		isocharset: charset,
 	}
 	return v
 }
@@ -82,7 +86,65 @@ var (
 	softSuffix = []byte("=")
 )
 
-func (q *qpReader) Read(p []byte) (n int, err error) {
+func (q *qpReader) Decode(reader io.Reader, writer io.Writer) (n int, err error) {
+	buffer := new(bytes.Buffer)
+	//var n0 int
+	rdr := bufio.NewReader(reader)
+	for {
+		var line []byte
+		line, err = rdr.ReadSlice('\n')
+		if err != nil {
+			if err != io.EOF {
+				return
+			}
+		}
+		n += len(line)
+		hasLF := bytes.HasSuffix(line, lf)
+		hasCR := bytes.HasSuffix(line, crlf)
+		wholeLine := line
+		line = bytes.TrimRightFunc(wholeLine, isQPDiscardWhitespace)
+		if bytes.HasSuffix(line, softSuffix) {
+			rightStripped := wholeLine[len(line):]
+			line = line[:len(line)-1]
+			if !bytes.HasPrefix(rightStripped, lf) && !bytes.HasPrefix((rightStripped), crlf) {
+				err = fmt.Errorf("multipart: invalid bytes after =: %q", rightStripped)
+				//return ?
+			}
+		} else if hasLF {
+			if hasCR {
+				line = append(line, '\r', '\n')
+			} else {
+				line = append(line, '\n')
+			}
+		}
+		for len(line) > 0 {
+			switch {
+			case line[0] == '=':
+				var b byte
+				b, err = q.readHexByte(line[1:])
+				if err != nil {
+					return
+				}
+				if q.isocharset > -1 {
+					bb, _ := latinx.DecodeByte(q.isocharset, b)
+					if bb != nil {
+						buffer.Write(bb)
+					}
+				} else {
+					buffer.WriteByte(b)
+				}
+				line = line[2:]
+			case line[0] == '\t' || line[0] == '\r' || line[0] == '\n':
+				break
+			case line[0] < ' ' || line[0] > '~':
+				err = fmt.Errorf("multipart: invalid unescaped byte 0x%02x in quoted-printable body", line[0])
+				return
+			}
+		}
+	}
+}
+
+/*func (q *qpReader) Read(p []byte) (n int, err error) {
 	for len(p) > 0 {
 		if len(q.line) == 0 {
 			if q.rerr != nil {
@@ -111,6 +173,7 @@ func (q *qpReader) Read(p []byte) (n int, err error) {
 			continue
 		}
 		b := q.line[0]
+		var bb []byte
 
 		switch {
 		case b == '=':
@@ -119,10 +182,9 @@ func (q *qpReader) Read(p []byte) (n int, err error) {
 				return n, err
 			}
 			if q.isocharset > -1 {
-				fmt.Println("b0:", b)
-				bb, _ := latinx.Decode(q.isocharset, []byte{b})
-				b = bb[0]
-				fmt.Println("b1 (array):", bb)
+				//fmt.Println("b0:", b)
+				bb, _ := latinx.DecodeByte(q.isocharset, b)
+				//fmt.Println("b1 (array):", bb)
 			}
 			q.line = q.line[2:] // 2 of the 3; other 1 is done below
 		case b == '\t' || b == '\r' || b == '\n':
@@ -130,10 +192,14 @@ func (q *qpReader) Read(p []byte) (n int, err error) {
 		case b < ' ' || b > '~':
 			return n, fmt.Errorf("multipart: invalid unescaped byte 0x%02x in quoted-printable body", b)
 		}
-		p[0] = b
-		p = p[1:]
+		if bb != nil {
+			// THIS FUNC WILL NOT WORK!!!
+		} else {
+			p[0] = b
+			p = p[1:]
+		}
 		q.line = q.line[1:]
 		n++
 	}
 	return n, nil
-}
+}*/

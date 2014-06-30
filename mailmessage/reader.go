@@ -278,13 +278,14 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		os.Remove(tf3n)
 		msg0.decoded = true
 	} else if cte == "quoted-printable" && !msg0.decoded {
-		bio := newQuotedPrintableReader(msg0.File)
+		bio := newQuotedPrintableReaderByCharsetId(-1)
 		pn0 := header.MapParams(msg0.Header.Get("Content-Type"))
 		if len(pn0["charset"]) > 0 {
-			bio = newQuotedPrintableReader(msg0.File, pn0["charset"])
+			bio = newQuotedPrintableReaderByCharsetStr(pn0["charset"])
 		}
 		tf3n, tf3, _ := tempFile()
-		io.Copy(tf3, bio)
+		bio.Decode(tf2, tf3)
+		//io.Copy(tf3, bio)
 		tf3.Sync()
 		tf3.Seek(0, 0)
 		tf2.Seek(0, 0)
@@ -413,27 +414,30 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff := new(bytes.Buffer)
 				vv := str0[10 : len(str0)-2]
 				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff)
+				ior := newQuotedPrintableReaderByCharsetId(-1)
 				buff2 := new(bytes.Buffer)
-				io.Copy(buff2, ior)
+				//io.Copy(buff2, ior)
+				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
 			v[k2] = iso88591q2.ReplaceAllStringFunc(v[k2], func(str0 string) string {
 				buff := new(bytes.Buffer)
 				vv := str0[15 : len(str0)-2]
 				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff, "iso-8859-1")
+				ior := newQuotedPrintableReaderByCharsetStr("iso-8859-1")
 				buff2 := new(bytes.Buffer)
-				io.Copy(buff2, ior)
+				//io.Copy(buff2, ior)
+				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
 			v[k2] = iso88591q.ReplaceAllStringFunc(v[k2], func(str0 string) string {
 				buff := new(bytes.Buffer)
 				vv := str0[14 : len(str0)-1]
 				buff.WriteString(vv)
-				ior := newQuotedPrintableReader(buff, "iso-8859-1")
+				ior := newQuotedPrintableReaderByCharsetStr("iso-8859-1")
 				buff2 := new(bytes.Buffer)
-				io.Copy(buff2, ior)
+				//io.Copy(buff2, ior)
+				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
 			if strings.HasPrefix(v[k2], "\"") && strings.HasSuffix(v[k2], "\"") {
