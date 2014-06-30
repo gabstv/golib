@@ -451,6 +451,10 @@ func getBoundary(contentType string) (string, error) {
 	strs := strings.Split(contentType, ";")
 	for _, v := range strs {
 		v = strings.TrimSpace(v)
+		//TODO: fix this workaround
+		if v[0] == 'B' {
+			v = "b" + v[1:]
+		}
 		if strings.HasPrefix(v, "boundary=") {
 			return v[9:], nil
 		}
