@@ -30,7 +30,7 @@ const (
 
 var (
 	utf8b      = regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
-	utf8q      = regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
+	utf8q      = regexp.MustCompile(`=\?UTF-8\?Q\?(.*?)\?=`)
 	iso88591q  = regexp.MustCompile(`\?iso-8859-1\?Q\?(.*?)\?`)
 	iso88591q2 = regexp.MustCompile(`=\?iso-8859-1\?Q\?(.*?)\?=`)
 )
@@ -402,6 +402,7 @@ func normalizeHeaders(h mail.Header) mail.Header {
 	for k, v := range h {
 		for k2 := range v {
 			v[k2] = utf8b.ReplaceAllStringFunc(v[k2], func(str0 string) string {
+				log.Println("UTF8-BINARY")
 				vv := str0[10 : len(str0)-2]
 				v8, err := base64.StdEncoding.DecodeString(vv)
 				if err != nil {
@@ -416,7 +417,6 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff.WriteString(vv)
 				ior := newQuotedPrintableReaderByCharsetId(-1)
 				buff2 := new(bytes.Buffer)
-				//io.Copy(buff2, ior)
 				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
@@ -426,7 +426,6 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff.WriteString(vv)
 				ior := newQuotedPrintableReaderByCharsetStr("iso-8859-1")
 				buff2 := new(bytes.Buffer)
-				//io.Copy(buff2, ior)
 				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
@@ -436,7 +435,6 @@ func normalizeHeaders(h mail.Header) mail.Header {
 				buff.WriteString(vv)
 				ior := newQuotedPrintableReaderByCharsetStr("iso-8859-1")
 				buff2 := new(bytes.Buffer)
-				//io.Copy(buff2, ior)
 				ior.Decode(buff, buff2)
 				return buff2.String()
 			})
