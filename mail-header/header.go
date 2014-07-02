@@ -77,9 +77,11 @@ func ExtractNameEmail(fromstr string) (string, string) {
 	f2 := strings.Split(fromstr, "<")
 	if len(f2) != 2 {
 		nm := strings.TrimSpace(fromstr)
+		nm = strings.Trim(nm, "\"")
 		return nm, nm
 	}
 	f2[1] = strings.Trim(f2[1], "> ")
 	f2[0] = strings.TrimSpace(f2[0])
+	f2[0] = strings.Trim(f2[0], "\"")
 	return f2[0], f2[1]
 }
