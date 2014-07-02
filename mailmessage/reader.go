@@ -46,9 +46,15 @@ type Message struct {
 
 func (m *Message) DebugPrint() {
 	log.Println("m *Message DebugPrint [HEADER CT]", m.Header.Get("Content-Type"))
-	log.Println("m *Message DebugPrint [HEADER FROM]", m.Header.Get("From"))
-	log.Println("m *Message DebugPrint [HEADER SUBJECT]", m.Header.Get("Subject"))
-	log.Println("m *Message DebugPrint [HEADER X-Original-From]", m.Header.Get("X-Original-From"))
+	if len(m.Header.Get("From")) > 0 {
+		log.Println("m *Message DebugPrint [HEADER FROM]", m.Header.Get("From"))
+	}
+	if len(m.Header.Get("Subject")) > 0 {
+		log.Println("m *Message DebugPrint [HEADER SUBJECT]", m.Header.Get("Subject"))
+	}
+	if len(m.Header.Get("X-Original-From")) > 0 {
+		log.Println("m *Message DebugPrint [HEADER X-Original-From]", m.Header.Get("X-Original-From"))
+	}
 	//log.Println("m *Message DebugPrint [HEADER]", m.Header)
 	if m.File != nil {
 		len0, _ := io.Copy(ioutil.Discard, m.File)
