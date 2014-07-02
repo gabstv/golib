@@ -28,8 +28,36 @@ type qpReader struct {
 
 func (q *qpReader) setcharset(cset string) {
 	switch strings.ToLower(cset) {
-	case "iso-8859-1":
+	case "iso-8859-1", "latin1":
 		q.isocharset = latinx.ISO_8859_1
+	case "iso-8859-2", "latin2":
+		q.isocharset = latinx.ISO_8859_2
+	case "iso-8859-3", "latin3":
+		q.isocharset = latinx.ISO_8859_3
+	case "iso-8859-4", "latin4":
+		q.isocharset = latinx.ISO_8859_4
+	case "iso-8859-5", "cyrillic":
+		q.isocharset = latinx.ISO_8859_5
+	case "iso-8859-6", "arabic":
+		q.isocharset = latinx.ISO_8859_6
+	case "iso-8859-7", "greek":
+		q.isocharset = latinx.ISO_8859_7
+	case "iso-8859-8", "hebrew":
+		q.isocharset = latinx.ISO_8859_8
+	case "iso-8859-9", "latin5":
+		q.isocharset = latinx.ISO_8859_9
+	case "iso-8859-10", "latin6":
+		q.isocharset = latinx.ISO_8859_10
+	case "iso-8859-11", "thai":
+		q.isocharset = latinx.ISO_8859_11
+	case "iso-8859-13", "latin7":
+		q.isocharset = latinx.ISO_8859_13
+	case "iso-8859-14", "latin8":
+		q.isocharset = latinx.ISO_8859_14
+	case "iso-8859-15", "latin9":
+		q.isocharset = latinx.ISO_8859_15
+	case "iso-8859-16", "latin10":
+		q.isocharset = latinx.ISO_8859_16
 	}
 }
 
