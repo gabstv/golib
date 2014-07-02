@@ -10,6 +10,7 @@ var (
 	Verbose = false
 )
 
+// Returns a lowercade bound map of strings
 func MapParams(val string) map[string]string {
 	if Verbose {
 		log.Println("MapParams", val)
@@ -53,7 +54,7 @@ func MapParams(val string) map[string]string {
 					if Verbose {
 						log.Println(lastk.String(), "=", lastv.String())
 					}
-					outp[strings.TrimSpace(lastk.String())] = strings.TrimSpace(lastv.String())
+					outp[strings.ToLower(strings.TrimSpace(lastk.String()))] = strings.TrimSpace(lastv.String())
 					lastk.Truncate(0)
 					lastv.Truncate(0)
 					insideval = false
@@ -66,7 +67,7 @@ func MapParams(val string) map[string]string {
 		}
 	}
 	if lastk.Len() > 0 {
-		k := strings.TrimSpace(lastk.String())
+		k := strings.ToLower(strings.TrimSpace(lastk.String()))
 		outp[k] = strings.TrimSpace(lastv.String())
 	}
 	return outp
