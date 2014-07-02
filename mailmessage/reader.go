@@ -45,18 +45,22 @@ type Message struct {
 }
 
 func (m *Message) DebugPrint() {
-	log.Println("m *Message DebugPrint [HEADER]", m.Header.Get("Content-Type"))
-	log.Println("m *Message DebugPrint [HEADER]", m.Header)
+	log.Println("m *Message DebugPrint [HEADER CT]", m.Header.Get("Content-Type"))
+	log.Println("m *Message DebugPrint [HEADER FROM]", m.Header.Get("From"))
+	log.Println("m *Message DebugPrint [HEADER SUBJECT]", m.Header.Get("Subject"))
+	log.Println("m *Message DebugPrint [HEADER X-Original-From]", m.Header.Get("X-Original-From"))
+	//log.Println("m *Message DebugPrint [HEADER]", m.Header)
 	if m.File != nil {
 		len0, _ := io.Copy(ioutil.Discard, m.File)
 		m.File.Seek(0, 0)
 		log.Println("m *Message DebugPrint [BODY]", len0, "bytes")
 	}
-	log.Println("m *Message DebugPrint [CHILDREN]")
 	if m.Children != nil {
+		log.Println("m *Message DebugPrint [CHILDREN START]")
 		for _, v := range m.Children {
 			v.DebugPrint()
 		}
+		log.Println("m *Message DebugPrint [CHILDREN STOP]")
 	}
 }
 

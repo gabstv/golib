@@ -27,4 +27,12 @@ func TestExtractMil(t *testing.T) {
 	if r1 != ev {
 		t.Errorf("expected `%v` got `%v`\n", ev, r1)
 	}
+	raw = "gabriel@nutripele.com"
+	r0, r1 = ExtractNameEmail(raw)
+	if r0 != "gabriel@nutripele.com" {
+		t.Errorf("expected `%v` got `%v`\n", "gabriel@nutripele.com", r0)
+	}
+	if r1 != "gabriel@nutripele.com" {
+		t.Errorf("expected `%v` got `%v`\n", "gabriel@nutripele.com", r1)
+	}
 }

@@ -76,7 +76,8 @@ func MapParams(val string) map[string]string {
 func ExtractNameEmail(fromstr string) (string, string) {
 	f2 := strings.Split(fromstr, "<")
 	if len(f2) != 2 {
-		return strings.TrimSpace(fromstr), ""
+		nm := strings.TrimSpace(fromstr)
+		return nm, nm
 	}
 	f2[1] = strings.Trim(f2[1], "> ")
 	f2[0] = strings.TrimSpace(f2[0])
