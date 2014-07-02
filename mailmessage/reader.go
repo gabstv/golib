@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/mail"
 	//"net/textproto"
@@ -43,6 +44,34 @@ type Message struct {
 	File     *os.File
 	Children []*Message
 	decoded  bool
+}
+
+func (m *Message) DebugPrint() {
+	log.Println("m *Message DebugPrint [HEADER]", m.Header.Get("Content-Type"))
+	log.Println("m *Message DebugPrint [HEADER]", m.Header)
+	if m.File != nil {
+		len0, _ := io.Copy(ioutil.Discard, m.File)
+		m.File.Seek(0, 0)
+		log.Println("m *Message DebugPrint [BODY]", len0, "bytes")
+	}
+	log.Println("m *Message DebugPrint [CHILDREN]")
+	if m.Children != nil {
+		for _, v := range m.Children {
+			v.DebugPrint()
+		}
+	}
+}
+
+func (m *Message) AllMessages() []*Message {
+	mmsg := make([]*Message, 0)
+	mmsg = append(mmsg, m)
+	if m.Children != nil {
+		for _, v := range m.Children {
+			list0 := v.AllMessages()
+			mmsg = append(mmsg, list0...)
+		}
+	}
+	return mmsg
 }
 
 func (m *Message) Purge() {
