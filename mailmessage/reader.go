@@ -447,6 +447,14 @@ func normalizeHeaders(h mail.Header) mail.Header {
 }
 
 func getBoundary(contentType string) (string, error) {
+	kv := header.MapParams(contentType)
+	if len(kv["boundary"]) > 0 {
+		return kv["boundary"], nil
+	}
+	return "", errors.New("Boundary not found!")
+}
+
+/*func getBoundary(contentType string) (string, error) {
 	strs := strings.Split(contentType, ";")
 	for _, v := range strs {
 		v = strings.TrimSpace(v)
@@ -459,7 +467,7 @@ func getBoundary(contentType string) (string, error) {
 		}
 	}
 	return "", errors.New("Boundary not found!")
-}
+}*/
 
 var (
 	tfi = 1
