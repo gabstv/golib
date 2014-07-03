@@ -28,10 +28,10 @@ const (
 )
 
 var (
-	utf8b      = regexp.MustCompile(`=\?UTF-8\?B\?(.*?)\?=`)
-	utf8q      = regexp.MustCompile(`=\?UTF-8\?Q\?(.*?)\?=`)
-	iso88591q  = regexp.MustCompile(`\?iso-8859-1\?Q\?(.*?)\?`)
-	iso88591q2 = regexp.MustCompile(`=\?iso-8859-1\?Q\?(.*?)\?=`)
+	utf8b      = regexp.MustCompile(`(?i)=\?UTF-8\?B\?(.*?)\?=`)
+	utf8q      = regexp.MustCompile(`(?i)=\?UTF-8\?Q\?(.*?)\?=`)
+	iso88591q  = regexp.MustCompile(`(?i)\?iso-8859-1\?Q\?(.*?)\?`)
+	iso88591q2 = regexp.MustCompile(`(?i)=\?iso-8859-1\?Q\?(.*?)\?=`)
 )
 
 type Message struct {
