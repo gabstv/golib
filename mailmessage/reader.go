@@ -161,7 +161,10 @@ func New(rdr *bufio.Reader) (*Message, error) {
 	} else if strings.HasPrefix(line, "-ERR") {
 		return nil, errors.New(line[5:])
 	} else {
-		return nil, errors.New("Unknown pop3 server response `" + line + "`")
+		//TEMP
+		//b00 := new(bytes.Buffer)
+		//io.Copy(b00, rdr)
+		return nil, errors.New("Unknown pop3 server response `" + line + "`") // `" + b00.String() + "`")
 	}
 	// save to a temporary file
 	nowf := "msg_" + strconv.FormatInt(time.Now().Unix(), 10) + ".dat"

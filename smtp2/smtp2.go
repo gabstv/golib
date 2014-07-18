@@ -2,11 +2,24 @@ package smtp2
 
 import (
 	"io"
+	"net"
 	"net/smtp"
+	"time"
 )
 
 func SendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader) error {
-	c, err := smtp.Dial(addr)
+	return sendMail(addr, a, from, to, msg, time.Second*30)
+}
+
+func sendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader, timeout time.Duration) error {
+	var c *smtp.Client
+	var err error
+	if timeout == 0 {
+		c, err = smtp.Dial(addr)
+	} else {
+		c, err = DialWithTimeout(addr, timeout)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -47,4 +60,13 @@ func SendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader)
 		return err
 	}
 	return c.Quit()
+}
+
+func DialWithTimeout(addr string, timeout time.Duration) (*smtp.Client, error) {
+	conn, err := net.DialTimeout("tcp", addr, timeout)
+	if err != nil {
+		return nil, err
+	}
+	host, _, _ := net.SplitHostPort(addr)
+	return smtp.NewClient(conn, host)
 }
