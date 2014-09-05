@@ -497,5 +497,8 @@ func tempFile() (string, *os.File, error) {
 	fn := hex.EncodeToString(bs) + "_" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + strconv.Itoa(tfi) + ".dat"
 	p0 := path.Join(os.TempDir(), fn)
 	file, err := os.OpenFile(p0, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-	return p0, file, errors.New("file, err := os.OpenFile(p0, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666): " + err.Error())
+	if err != nil {
+		return p0, file, errors.New("file, err := os.OpenFile(p0, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666): " + err.Error())
+	}
+	return p0, file, nil
 }
