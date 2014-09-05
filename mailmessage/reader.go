@@ -153,13 +153,13 @@ func New(rdr *bufio.Reader) (*Message, error) {
 
 	line, err := rdr.ReadString('\n')
 	if err != nil {
-		return nil, err
+		return nil, errors.New("ERR: Newline: " + err.Error())
 	}
 
 	if strings.HasPrefix(line, "+OK") {
 		log.Println("NEW MAIL", line[4:])
 	} else if strings.HasPrefix(line, "-ERR") {
-		return nil, errors.New(line[5:])
+		return nil, errors.New("strings.HasPrefix(line, \"-ERR\") " + line[5:])
 	} else {
 		//TEMP
 		//b00 := new(bytes.Buffer)
@@ -171,13 +171,13 @@ func New(rdr *bufio.Reader) (*Message, error) {
 	fil0, err := os.OpenFile(path.Join(os.TempDir(), nowf), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.New("os.OpenFile(path.Join(os.TempDir(), nowf), os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666) " + err.Error())
 	}
 
 	for {
 		line, err = rdr.ReadString('\n')
 		if err != nil {
-			return nil, err
+			return nil, errors.New("line, err = rdr.ReadString('\n') " + err.Error())
 		}
 		if line == "."+CRLF {
 			break
@@ -224,7 +224,7 @@ Rummage:
 			goto Rummage
 		}
 		log.Println("ERROR ON READMESSAGE")
-		return nil, err
+		return nil, errors.New("ERROR ON READMESSAGE: " + err.Error())
 	}
 	mainm.Header = normalizeHeaders(mainm.Header)
 	contentType := mainm.Header.Get("Content-Type")
@@ -316,7 +316,7 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 func alternativeMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	a, b := multipartMessage(mainm, f)
 	if b != nil {
-		return nil, b
+		return nil, errors.New("alternativeMessage(mainm *mail.Message, f *os.File) (*Message, error): " + b.Error())
 	}
 	a.Kind = MSG_MULTIPARTALTERNATIVE
 	return a, b
@@ -329,7 +329,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	log.Println("`" + boundary + "`")
 	if err != nil {
 		log.Println("BOUNDARY ERROR", err)
-		return nil, err
+		return nil, errors.New("BOUNDARY ERROR: " + err.Error())
 	}
 	boundary = strings.Trim(boundary, "\"")
 	rdr := bufio.NewReader(mainm.Body)
@@ -342,7 +342,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 			if lerr.Error() == "EOF" {
 				break
 			} else {
-				return nil, lerr
+				return nil, errors.New("line, lerr := rdr.ReadString('\n') NOT EOF: " + lerr.Error())
 			}
 		}
 		if strings.HasPrefix(line, "--"+boundary) {
@@ -367,7 +367,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	for cont0 {
 		_, tf, err := tempFile()
 		if err != nil {
-			return nil, err
+			return nil, errors.New("_, tf, err := tempFile(): " + err.Error())
 		}
 		for {
 			line, err := rdr.ReadString('\n')
@@ -493,5 +493,5 @@ func tempFile() (string, *os.File, error) {
 	fn := hex.EncodeToString(bs) + "_" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + strconv.Itoa(tfi) + ".dat"
 	p0 := path.Join(os.TempDir(), fn)
 	file, err := os.OpenFile(p0, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
-	return p0, file, err
+	return p0, file, errors.New("file, err := os.OpenFile(p0, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666): " + err.Error())
 }

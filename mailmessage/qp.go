@@ -13,6 +13,7 @@ package mailmessage
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/gabstv/latinx"
 	"io"
@@ -92,10 +93,10 @@ func (q *qpReader) readHexByte(v []byte) (b byte, err error) {
 	}
 	var hb, lb byte
 	if hb, err = fromHex(v[0]); err != nil {
-		return 0, err
+		return 0, errors.New("hb, err = fromHex(v[0]); err != nil: " + err.Error())
 	}
 	if lb, err = fromHex(v[1]); err != nil {
-		return 0, err
+		return 0, errors.New("hb, err = fromHex(v[1]); err != nil: " + err.Error())
 	}
 	return hb<<4 | lb, nil
 }
@@ -123,6 +124,7 @@ func (q *qpReader) Decode(reader io.Reader, writer io.Writer) (n int, err error)
 		line, err = rdr.ReadSlice('\n')
 		if err != nil {
 			if err != io.EOF {
+				err = errors.New("Decode NOT EOF: " + err.Error())
 				return
 			}
 			if len(line) < 1 {
