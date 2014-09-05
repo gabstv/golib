@@ -16,6 +16,18 @@ func TestMap(t *testing.T) {
 	}
 }
 
+func TestMap2(t *testing.T) {
+	Verbose = true
+	expect := map[string]string{"value": "boundary=\"potato\"", "boundary": "potato"}
+	raw := "boundary=\"potato\""
+	result := MapParams(raw)
+	for k, v := range expect {
+		if v != result[k] {
+			t.Errorf("expected `%v` got `%v`\n", v, result[k])
+		}
+	}
+}
+
 func TestExtractMil(t *testing.T) {
 	en := "Gabriel Ochsenhofer"
 	ev := "gabriel@nutripele.com"

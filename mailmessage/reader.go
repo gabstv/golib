@@ -328,8 +328,12 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	boundary, err := getBoundary(ct)
 	log.Println("`" + boundary + "`")
 	if err != nil {
-		log.Println("BOUNDARY ERROR", err)
-		return nil, errors.New("BOUNDARY ERROR: " + err.Error())
+		h2 := mainm.Header.Get("X-Invalid-Header")
+		boundary, err = getBoundary(h2)
+		if err != nil {
+			log.Println("[multipartMessage] BOUNDARY ERROR", err)
+			return nil, errors.New("BOUNDARY ERROR: " + err.Error())
+		}
 	}
 	boundary = strings.Trim(boundary, "\"")
 	rdr := bufio.NewReader(mainm.Body)

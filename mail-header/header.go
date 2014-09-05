@@ -3,6 +3,7 @@ package header
 import (
 	"bytes"
 	"log"
+	"regexp"
 	"strings"
 )
 
@@ -19,7 +20,11 @@ func MapParams(val string) map[string]string {
 	outp := make(map[string]string)
 	outp["value"] = strings.TrimSpace(vs[0])
 	if len(vs) < 2 {
-		return outp
+		if ok, _ := regexp.Match("^\\w+=", []byte(outp["value"])); ok {
+			vs = append(vs, outp["value"])
+		} else {
+			return outp
+		}
 	}
 	lastk := new(bytes.Buffer)
 	lastv := new(bytes.Buffer)
