@@ -334,6 +334,14 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 			log.Println("[multipartMessage] BOUNDARY ERROR", err)
 			return nil, errors.New("BOUNDARY ERROR: " + err.Error())
 		}
+	} else {
+		hn2 := mainm.Header.Get("X-Invalid-Header")
+		log.Println("X-Invalid-Header", hn2)
+		b2, err := getBoundary(hn2)
+		if err == nil {
+			log.Println("boundary was replaced from", boundary, "to", b2)
+			boundary = b2
+		}
 	}
 	boundary = strings.Trim(boundary, "\"")
 	rdr := bufio.NewReader(mainm.Body)
@@ -390,7 +398,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		nmsg, err := mail.ReadMessage(tf)
 		if err != nil {
 			log.Println("nmsg, err := mail.ReadMessage(tf)", err)
-			continue
+			return nil, err
 		}
 		var mmmsg *Message
 		contentType := nmsg.Header.Get("Content-Type")
@@ -403,7 +411,7 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 		}
 		if err != nil {
 			log.Println("err johnson", err)
-			continue
+			return nil, err
 		}
 		msg0.Children = append(msg0.Children, mmmsg)
 	}

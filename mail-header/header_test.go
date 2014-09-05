@@ -28,6 +28,18 @@ func TestMap2(t *testing.T) {
 	}
 }
 
+func TestMap3(t *testing.T) {
+	Verbose = true
+	expect := map[string]string{"value": "boundary=\"_004_5857d86ac1e145538e299fb48014a39bGRUPR80MB362lamprd80pro_\"", "boundary": "_004_5857d86ac1e145538e299fb48014a39bGRUPR80MB362lamprd80pro_", "type": "multipart/alternative"}
+	raw := "boundary=\"_004_5857d86ac1e145538e299fb48014a39bGRUPR80MB362lamprd80pro_\"; type=\"multipart/alternative\""
+	result := MapParams(raw)
+	for k, v := range expect {
+		if v != result[k] {
+			t.Errorf("expected `%v` got `%v`\n", v, result[k])
+		}
+	}
+}
+
 func TestExtractMil(t *testing.T) {
 	en := "Gabriel Ochsenhofer"
 	ev := "gabriel@nutripele.com"

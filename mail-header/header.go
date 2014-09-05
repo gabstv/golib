@@ -25,6 +25,10 @@ func MapParams(val string) map[string]string {
 		} else {
 			return outp
 		}
+	} else {
+		if ok, _ := regexp.Match("^\\w+=", []byte(outp["value"])); ok {
+			vs[1] = vs[1] + "; " + vs[0]
+		}
 	}
 	lastk := new(bytes.Buffer)
 	lastv := new(bytes.Buffer)
