@@ -34,3 +34,12 @@ func Split2(s, sep string) (a, b string) {
 	}
 	return
 }
+
+func LenGtAll(limit int, rest ...string) {
+	for _, v := range rest {
+		if len(v) <= limit {
+			return false
+		}
+	}
+	return true
+}
