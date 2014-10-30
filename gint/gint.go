@@ -1,12 +1,12 @@
 package gint
 
-func IMust(i int64, err error) int64 {
+func IntMust(i int, err error) int {
 	if err != nil {
 		panic(err)
 	}
 	return i
 }
 
-func IIgnore(i int64, err error) int64 {
+func IntIgnore(i int, err error) int {
 	return i
 }
