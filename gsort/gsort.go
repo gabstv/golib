@@ -76,6 +76,7 @@ func SortedStringKeys(v interface{}, isnumeric bool) []string {
 	// now sort
 	if isnumeric {
 		sort.Sort(sn(out0))
+		return out0
 	}
 	sort.Sort(ss(out0))
 	return out0
