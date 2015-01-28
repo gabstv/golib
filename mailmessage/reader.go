@@ -316,7 +316,7 @@ func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 func alternativeMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	a, b := multipartMessage(mainm, f)
 	if b != nil {
-		return nil, errors.New("alternativeMessage(mainm *mail.Message, f *os.File) (*Message, error): " + b.Error())
+		return &Message{Header: mainm.Header}, errors.New("alternativeMessage(mainm *mail.Message, f *os.File) (*Message, error): " + b.Error())
 	}
 	a.Kind = MSG_MULTIPARTALTERNATIVE
 	return a, b
@@ -395,10 +395,22 @@ func multipartMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 			tf.WriteString(line)
 		}
 		tf.Seek(0, 0)
+		//nmsg, err := readMessage(tf)
 		nmsg, err := mail.ReadMessage(tf)
 		if err != nil {
-			log.Println("nmsg, err := mail.ReadMessage(tf)", err)
-			return nil, err
+			log.Println("Error reading message!", err)
+			log.Println("Native mail error!")
+			//if nmsg == nil {
+			return &Message{Header: mainm.Header}, err
+			//}
+			//mmmsg2 := &Message{}
+			//mmmsg2.Header = nmsg.Header
+			//log.Println(nmsg.Header)
+			//if nmsg.Body == nil {
+			//	err = errors.New("[mailmessage] EOF while trying to read the message body.")
+			//	return mmmsg2, err
+			//}
+			//return mmmsg2, err
 		}
 		var mmmsg *Message
 		contentType := nmsg.Header.Get("Content-Type")
