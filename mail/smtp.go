@@ -188,5 +188,9 @@ Submit:
 	} else {
 		rrdr = multipartmessage
 	}
-	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, msg.From.Email, tols, rrdr)
+	snd := msg.From.Email
+	if len(msg.RawHeaders["Sender"]) > 0 {
+		snd = msg.RawHeaders["Sender"]
+	}
+	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, snd, tols, rrdr)
 }
