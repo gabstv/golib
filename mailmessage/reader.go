@@ -97,8 +97,36 @@ func (m *Message) Purge() {
 	}
 }
 
+func findhtml(m *Message) string {
+	b := new(bytes.Buffer)
+	if m.Children != nil {
+		for _, v := range m.Children {
+			b.WriteString(findhtml(v))
+		}
+	}
+	if ct := m.Header.Get("Content-Type"); strings.HasPrefix(ct, "text/html") {
+		io.Copy(b, m.File)
+		m.File.Seek(0, 0)
+	}
+	return b.String()
+}
+
+func findplaintext(m *Message) string {
+	b := new(bytes.Buffer)
+	if m.Children != nil {
+		for _, v := range m.Children {
+			b.WriteString(findplaintext(v))
+		}
+	}
+	if ct := m.Header.Get("Content-Type"); strings.HasPrefix(ct, "text/plain") {
+		io.Copy(b, m.File)
+		m.File.Seek(0, 0)
+	}
+	return b.String()
+}
+
 func (m *Message) HTML() string {
-	var rdr *os.File
+	/*var rdr *os.File
 	if m.Kind == MSG_MULTIPARTALTERNATIVE {
 		// find html
 		for k := range m.Children {
@@ -121,11 +149,12 @@ func (m *Message) HTML() string {
 	var buffer bytes.Buffer
 	io.Copy(&buffer, rdr)
 	rdr.Seek(0, 0)
-	return buffer.String()
+	return buffer.String()*/
+	return findhtml(m)
 }
 
 func (m *Message) Plaintext() string {
-	var rdr io.Reader
+	/*var rdr io.Reader
 	if m.Kind == MSG_MULTIPARTALTERNATIVE {
 		// find text
 		for k := range m.Children {
@@ -146,7 +175,8 @@ func (m *Message) Plaintext() string {
 	}
 	var buffer bytes.Buffer
 	io.Copy(&buffer, rdr)
-	return buffer.String()
+	return buffer.String()*/
+	return findplaintext(m)
 }
 
 func New(rdr *bufio.Reader) (*Message, error) {
