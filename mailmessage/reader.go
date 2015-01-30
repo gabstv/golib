@@ -220,6 +220,18 @@ Rummage:
 	return basicMessage(mainm, fil0)
 }
 
+// Remove all temporary files related to it.
+func (m *Message) Destroy() {
+	if m.Children != nil {
+		for _, v := range m.Children {
+			v.Destroy()
+		}
+	}
+	n := m.File.Name()
+	m.File.Close()
+	os.Remove(n)
+}
+
 func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
 	msg0 := &Message{}
 	msg0.Header = mainm.Header
