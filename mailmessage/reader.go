@@ -126,56 +126,10 @@ func findplaintext(m *Message) string {
 }
 
 func (m *Message) HTML() string {
-	/*var rdr *os.File
-	if m.Kind == MSG_MULTIPARTALTERNATIVE {
-		// find html
-		for k := range m.Children {
-			ct := m.Children[k].Header.Get("Content-Type")
-			if strings.HasPrefix(ct, "text/html") {
-				rdr = m.Children[k].File
-				log.Println("^^^ HTML HEADER:::", m.Children[k].Header)
-				break
-			}
-		}
-	} else if m.Kind == MSG_MESSAGE {
-		ct := m.Header.Get("Content-Type")
-		if strings.HasPrefix(ct, "text/html") {
-			rdr = m.File
-		}
-	}
-	if rdr == nil {
-		return ""
-	}
-	var buffer bytes.Buffer
-	io.Copy(&buffer, rdr)
-	rdr.Seek(0, 0)
-	return buffer.String()*/
 	return findhtml(m)
 }
 
 func (m *Message) Plaintext() string {
-	/*var rdr io.Reader
-	if m.Kind == MSG_MULTIPARTALTERNATIVE {
-		// find text
-		for k := range m.Children {
-			ct := m.Children[k].Header.Get("Content-Type")
-			if strings.HasPrefix(ct, "text/plain") {
-				rdr = m.Children[k].File
-				break
-			}
-		}
-	} else if m.Kind == MSG_MESSAGE {
-		ct := m.Header.Get("Content-Type")
-		if strings.HasPrefix(ct, "text/plain") {
-			rdr = m.File
-		}
-	}
-	if rdr == nil {
-		return ""
-	}
-	var buffer bytes.Buffer
-	io.Copy(&buffer, rdr)
-	return buffer.String()*/
 	return findplaintext(m)
 }
 
