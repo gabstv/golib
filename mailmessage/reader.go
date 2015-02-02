@@ -227,9 +227,11 @@ func (m *Message) Destroy() {
 			v.Destroy()
 		}
 	}
-	n := m.File.Name()
-	m.File.Close()
-	os.Remove(n)
+	if m.File != nil {
+		n := m.File.Name()
+		m.File.Close()
+		os.Remove(n)
+	}
 }
 
 func basicMessage(mainm *mail.Message, f *os.File) (*Message, error) {
