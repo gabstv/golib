@@ -24,14 +24,14 @@ func sendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader,
 		return err
 	}
 
+	defer c.Close()
+	if err = c.Hello("localhost"); err != nil {
+		return err
+	}
 	if tlsc != nil {
 		err = c.StartTLS(tlsc)
 	}
 	if err != nil {
-		return err
-	}
-	defer c.Close()
-	if err = c.Hello("localhost"); err != nil {
 		return err
 	}
 	if ok, _ := c.Extension("STARTTLS"); ok {
