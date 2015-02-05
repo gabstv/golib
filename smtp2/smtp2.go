@@ -1,17 +1,18 @@
 package smtp2
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"net/smtp"
 	"time"
 )
 
-func SendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader) error {
-	return sendMail(addr, a, from, to, msg, time.Second*30)
+func SendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader, tlsc *tls.Config) error {
+	return sendMail(addr, a, from, to, msg, time.Second*30, tlsc)
 }
 
-func sendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader, timeout time.Duration) error {
+func sendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader, timeout time.Duration, tlsc *tls.Config) error {
 	var c *smtp.Client
 	var err error
 	if timeout == 0 {
@@ -19,7 +20,13 @@ func sendMail(addr string, a smtp.Auth, from string, to []string, msg io.Reader,
 	} else {
 		c, err = DialWithTimeout(addr, timeout)
 	}
+	if err != nil {
+		return err
+	}
 
+	if tlsc != nil {
+		err = c.StartTLS(tlsc)
+	}
 	if err != nil {
 		return err
 	}

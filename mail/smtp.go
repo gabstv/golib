@@ -2,6 +2,7 @@ package mail
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"github.com/gabstv/golib/smtp2"
 	"github.com/sloonz/go-mime-message"
@@ -55,10 +56,15 @@ func (m *Message) AddRecipient(to Address) {
 type SMTP struct {
 	Auth    smtp.Auth
 	Address string
+	TLS     *tls.Config
 }
 
 func NewSMTP(auth smtp.Auth, address string) *SMTP {
-	return &SMTP{auth, address}
+	return &SMTP{auth, address, nil}
+}
+
+func (s *SMTP) SetTLS(tlsc *tls.Config) {
+	s.TLS = tlsc
 }
 
 func (s *SMTP) SubmitHTML(fromEmail, fromName, toEmail, toName, subject, htmlBody string, files *AttachmentList) (int, error) {
@@ -192,5 +198,5 @@ Submit:
 	if len(msg.RawHeaders["Sender"]) > 0 {
 		snd = msg.RawHeaders["Sender"]
 	}
-	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, snd, tols, rrdr)
+	return 1024 * 1024, smtp2.SendMail(s.Address, s.Auth, snd, tols, rrdr, s.TLS)
 }
